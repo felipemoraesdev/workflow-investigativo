@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import Button from '../../components/Button'
 
 export const Route = createFileRoute('/_app/')({
   component: RouteComponent,
@@ -20,12 +21,7 @@ function RouteComponent() {
           <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Workflow Investigativo</p>
           <h1 className="text-3xl font-semibold text-slate-100">Workflows</h1>
         </div>
-        <button
-          type="button"
-          className="rounded-lg border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-200"
-        >
-          Novo workflow
-        </button>
+        <Button> Novo workflow </Button>
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
