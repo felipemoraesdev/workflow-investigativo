@@ -5,6 +5,8 @@ import { selectGroupIdsByWorkflow, useWorkflowStore } from '../../store/workflow
 import type { Point } from '../../types/models'
 import GroupCard from './GroupCard'
 import GroupModal from './GroupModal'
+import { DragDropProvider, useDragDropMonitor } from '@dnd-kit/react'
+import { move } from '@dnd-kit/helpers'
 import Button from '../../components/Button'
 
 const GRID_SIZE = 28
@@ -31,6 +33,9 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
 
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   const [editingGroupName, setEditingGroupName] = useState('')
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
+  const [activePistaId, setActivePistaId] = useState<string | null>(null)
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null)
 
   const groupIdsSelector = useMemo(() => selectGroupIdsByWorkflow(workflowId), [workflowId])
   
@@ -40,6 +45,8 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
   const moveGroup = useWorkflowStore((state) => state.moveGroup)
   const updateGroup = useWorkflowStore((state) => state.updateGroup)
   const deleteGroup = useWorkflowStore((state) => state.deleteGroup)
+  
+  const movePista = useWorkflowStore((state) => state.movePista)
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
@@ -231,7 +238,7 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (!selectedGroupId) return
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      if (event.key !== 'Delete') return
       const confirmed = window.confirm('Deseja realmente excluir este grupo?')
       if (!confirmed) return
       deleteGroup(selectedGroupId)
@@ -257,42 +264,159 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
 
   const getScale = useCallback(() => scaleRef.current, [])
 
+  const buildGroupedPistas = useCallback(() => {
+    const state = useWorkflowStore.getState()
+    const grouped: Record<string, string[]> = {}
+    Object.values(state.groups).forEach((group) => {
+      if (group.workflowId === workflowId) grouped[group.id] = []
+    })
+    Object.values(state.pistas).forEach((pista) => {
+      if (grouped[pista.groupId]) grouped[pista.groupId].push(pista.id)
+    })
+    Object.entries(grouped).forEach(([groupId, ids]) => {
+      ids.sort((a, b) => state.pistas[a].order - state.pistas[b].order)
+      grouped[groupId] = ids
+    })
+    return grouped
+  }, [workflowId])
+
+  const groupedPistasRef = useRef<Record<string, string[]> | null>(null)
+
+  const applyGrouped = useCallback(
+    (next: Record<string, string[]>) => {
+      const state = useWorkflowStore.getState()
+      Object.entries(next).forEach(([groupId, ids]) => {
+        ids.forEach((id, index) => {
+          const pista = state.pistas[id]
+          if (!pista) return
+          if (pista.groupId !== groupId || pista.order !== index) {
+            movePista(id, groupId, index)
+          }
+        })
+      })
+    },
+    [movePista],
+  )
+
+  const handlePistaDragStart = useCallback(() => {
+    groupedPistasRef.current = buildGroupedPistas()
+  }, [buildGroupedPistas])
+
+  const handlePistaDragOver = useCallback(
+    (event: unknown) => {
+      if (!groupedPistasRef.current) {
+        groupedPistasRef.current = buildGroupedPistas()
+      }
+      const next = move(groupedPistasRef.current, event)
+      if (!next) return
+      groupedPistasRef.current = next
+      applyGrouped(next)
+    },
+    [applyGrouped, buildGroupedPistas],
+  )
+
+  const handlePistaDragEnd = useCallback(
+    (event: { canceled: boolean }) => {
+      if (event.canceled && groupedPistasRef.current) {
+        applyGrouped(groupedPistasRef.current)
+      }
+      groupedPistasRef.current = null
+    },
+    [applyGrouped],
+  )
+
+  const DragMonitor = () => {
+    useDragDropMonitor({
+      onDragStart(event) {
+        const source = event.operation.source as {
+          id?: string | number
+          sortable?: { group?: string | number }
+        } | null
+        setActivePistaId(source?.id ? String(source.id) : null)
+        setActiveGroupId(source?.sortable?.group ? String(source.sortable.group) : null)
+      },
+      onDragOver(event) {
+        const target = event.operation.target as {
+          id?: string | number
+          type?: string
+          sortable?: { group?: string | number }
+        } | null
+
+        const targetGroup = target?.sortable?.group
+
+        if (targetGroup) {
+          setDragOverGroupId(String(targetGroup))
+          return
+        }
+
+        if (target?.type === 'column') {
+          setDragOverGroupId(target?.id ? String(target.id) : null)
+          return
+        }
+
+        setDragOverGroupId(null)
+      },
+      onDragEnd(event) {
+        if (event.canceled) {
+          setDragOverGroupId(null)
+          setActivePistaId(null)
+          setActiveGroupId(null)
+          return
+        }
+        setDragOverGroupId(null)
+        setActivePistaId(null)
+        setActiveGroupId(null)
+      },
+    })
+    return null
+  }
+
   return (
     <div className="relative h-[100svh] w-full">
-      <div
-        ref={containerRef}
-        className="relative h-full w-full overflow-hidden bg-slate-950/40"
+      <DragDropProvider
+        onDragStart={handlePistaDragStart}
+        onDragOver={handlePistaDragOver}
+        onDragEnd={handlePistaDragEnd}
       >
-        <canvas
-          ref={canvasRef}
-          className="h-full w-full"
-          style={{ touchAction: 'none' }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        />
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
-          <div className="relative h-[5000px] w-[5000px]" style={overlayStyle}>
-            {groupIds.map((groupId) => (
-              <GroupCard
-                key={groupId}
-                groupId={groupId}
-                getScale={getScale}
-                onMove={handleMoveGroup}
-                onSelect={setSelectedGroupId}
-                onEdit={handleOpenEdit}
-                isSelected={selectedGroupId === groupId}
-              />
-            ))}
+        <DragMonitor />
+        <div
+          ref={containerRef}
+          className="relative h-full w-full overflow-hidden bg-slate-950/40"
+        >
+          <canvas
+            ref={canvasRef}
+            className="h-full w-full"
+            style={{ touchAction: 'none' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          />
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
+            <div className="absolute left-0 top-0" style={overlayStyle}>
+              {groupIds.map((groupId) => (
+                <GroupCard
+                  key={groupId}
+                  groupId={groupId}
+                  getScale={getScale}
+                  onMove={handleMoveGroup}
+                  onSelect={setSelectedGroupId}
+                  onEdit={handleOpenEdit}
+                  isSelected={selectedGroupId === groupId}
+                  dragOverGroupId={dragOverGroupId}
+                  activePistaId={activePistaId}
+                  activeGroupId={activeGroupId}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </DragDropProvider>
 
-     
       <div className="pointer-events-auto absolute right-6 top-6 z-10">
         <Button onClick={handleAddGroup}>Novo grupo</Button>
       </div>
+      
       {isCreateOpen && (
         <GroupModal
           title="Novo grupo"

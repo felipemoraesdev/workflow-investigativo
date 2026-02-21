@@ -20,7 +20,8 @@ export type Pista = {
   groupId: string
   order: number
   type: MediaType
-  content: string
+  description: string
+  content: string | null
   createdAt: string
   mediaUrl?: string
 }

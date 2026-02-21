@@ -28,6 +28,7 @@ type PistaActions = {
   updatePista: (id: string, data: Partial<Pista>) => void
   movePista: (id: string, groupId: string, order: number) => void
   deletePista: (id: string) => void
+  reorderPistasInGroup: (groupId: string, orderedIds: string[]) => void
 }
 
 type ConnectionActions = {
@@ -181,6 +182,17 @@ const createPistaSlice: StateCreator<
       return { pistas: rest }
     })
   },
+  reorderPistasInGroup: (groupId, orderedIds) => {
+    set((state) => {
+      const updated = { ...state.pistas }
+      orderedIds.forEach((id, index) => {
+        const pista = updated[id]
+        if (!pista || pista.groupId !== groupId) return
+        updated[id] = { ...pista, order: index }
+      })
+      return { pistas: updated }
+    })
+  },
 })
 
 const createConnectionSlice: StateCreator<
@@ -243,6 +255,14 @@ export const selectPistasByGroup = (groupId: string) => (state: WorkflowStore) =
   Object.values(state.pistas)
     .filter((pista) => pista.groupId === groupId)
     .sort((a, b) => a.order - b.order)
+
+export const selectPistaIdsByGroup = (groupId: string) => (state: WorkflowStore) =>
+  Object.values(state.pistas)
+    .filter((pista) => pista.groupId === groupId)
+    .sort((a, b) => a.order - b.order)
+    .map((pista) => pista.id)
+
+export const selectPistaById = (id: string) => (state: WorkflowStore) => state.pistas[id]
 
 export const selectConnectionsByWorkflow = (workflowId: string) => (state: WorkflowStore) =>
   Object.values(state.connections).filter((connection) => connection.workflowId === workflowId)

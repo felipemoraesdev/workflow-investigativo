@@ -1,4 +1,5 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from './Icon'
 import Button from './Button'
 
@@ -10,8 +11,11 @@ type ModalProps = {
 }
 
 const Modal = memo(function ({ title, description, children, onClose }: ModalProps) {
-  return (
-    <div className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-slate-950/60">
+  const body = useMemo(() => (typeof document !== 'undefined' ? document.body : null), [])
+  if (!body) return null
+
+  return createPortal(
+    <div className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60">
       <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-950/90 p-5 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -29,7 +33,8 @@ const Modal = memo(function ({ title, description, children, onClose }: ModalPro
         </div>
         <div className="mt-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    body,
   )
 })
 
