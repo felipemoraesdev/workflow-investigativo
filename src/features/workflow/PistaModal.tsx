@@ -40,12 +40,14 @@ const PistaModal = memo(function PistaModal({
   const [fileError, setFileError] = useState('')
 
   useEffect(() => {
-    setType(initialType)
-    setDescriptionText(initialDescription)
-    setContent(initialContent ?? '')
-    setMediaUrl(initialMediaUrl)
-    setFileError('')
-  }, [initialContent, initialDescription, initialMediaUrl, initialType])
+    if (isOpen) {
+      setType(initialType)
+      setDescriptionText(initialDescription)
+      setContent(initialContent ?? '')
+      setMediaUrl(initialMediaUrl)
+      setFileError('')
+    }
+  }, [isOpen, initialContent, initialDescription, initialMediaUrl, initialType])
 
   useEffect(() => {
     if (type === 'text') {

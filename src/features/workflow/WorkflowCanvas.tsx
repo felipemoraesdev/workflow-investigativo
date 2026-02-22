@@ -306,14 +306,17 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
     const state = useWorkflowStore.getState()
     const workflow = state.workflows[workflowId]
     if (!workflow) return
+
     const groups = Object.values(state.groups).filter((group) => group.workflowId === workflowId)
     const groupIds = new Set(groups.map((group) => group.id))
     const pistas = Object.values(state.pistas)
       .filter((pista) => groupIds.has(pista.groupId))
       .sort((a, b) => a.order - b.order)
+
     const connections = Object.values(state.connections).filter(
       (connection) => connection.workflowId === workflowId,
     )
+
     const payload = {
       workflow,
       groups,
@@ -321,12 +324,15 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
       connections,
       exportedAt: new Date().toISOString(),
     }
+
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
+    
     const link = document.createElement('a')
     link.href = url
     link.download = `workflow-${workflowId}.json`
     link.click()
+
     URL.revokeObjectURL(url)
   }, [workflowId])
 

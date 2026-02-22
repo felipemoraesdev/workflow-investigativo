@@ -208,24 +208,25 @@ const GroupCard = memo(function GroupCard({
           <button
             type="button"
             className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
-            onClick={handleConnectClick}
-            onPointerDown={(event) => event.stopPropagation()}
-            aria-label="Iniciar conexão"
-            title="Conectar"
-          >
-            <Icon name="link" size={14} />
-          </button>
-          <button
-            type="button"
-            className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
             onClick={handleEditClick}
             onPointerDown={(event) => event.stopPropagation()}
             aria-label="Editar nome do grupo"
-            title="Editar"
+            title="Editar título"
           >
             <Icon name="edit" size={14} />
           </button>
+          
         </div>
+        <button
+          type="button"
+          className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
+          onClick={handleConnectClick}
+          onPointerDown={(event) => event.stopPropagation()}
+          aria-label="Iniciar conexão"
+          title="Conectar grupo"
+        >
+          <Icon name="link" size={14} />
+        </button>
       </div>
       <div className="px-3 py-3" ref={droppableRef}>
         <div className="mb-2 flex items-center justify-between">

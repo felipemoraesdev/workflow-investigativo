@@ -10,43 +10,43 @@
 
 import { Route as rootRouteImport } from './pages/__root'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
-import { Route as AppIdRouteImport } from './pages/_app/$id'
+import { Route as AppWorkflowIdRouteImport } from './pages/_app/workflow/$id'
 
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/_app/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIdRoute = AppIdRouteImport.update({
-  id: '/_app/$id',
-  path: '/$id',
+const AppWorkflowIdRoute = AppWorkflowIdRouteImport.update({
+  id: '/_app/workflow/$id',
+  path: '/workflow/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/$id': typeof AppIdRoute
   '/': typeof AppIndexRoute
+  '/workflow/$id': typeof AppWorkflowIdRoute
 }
 export interface FileRoutesByTo {
-  '/$id': typeof AppIdRoute
   '/': typeof AppIndexRoute
+  '/workflow/$id': typeof AppWorkflowIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app/$id': typeof AppIdRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/workflow/$id': typeof AppWorkflowIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/$id' | '/'
+  fullPaths: '/' | '/workflow/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/$id' | '/'
-  id: '__root__' | '/_app/$id' | '/_app/'
+  to: '/' | '/workflow/$id'
+  id: '__root__' | '/_app/' | '/_app/workflow/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppIdRoute: typeof AppIdRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppWorkflowIdRoute: typeof AppWorkflowIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,19 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/$id': {
-      id: '/_app/$id'
-      path: '/$id'
-      fullPath: '/$id'
-      preLoaderRoute: typeof AppIdRouteImport
+    '/_app/workflow/$id': {
+      id: '/_app/workflow/$id'
+      path: '/workflow/$id'
+      fullPath: '/workflow/$id'
+      preLoaderRoute: typeof AppWorkflowIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  AppIdRoute: AppIdRoute,
   AppIndexRoute: AppIndexRoute,
+  AppWorkflowIdRoute: AppWorkflowIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
