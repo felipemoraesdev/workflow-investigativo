@@ -15,10 +15,16 @@ type GroupCardProps = {
   onMove: (id: string, position: Point) => void
   onSelect: (id: string) => void
   onEdit: (id: string) => void
+  onConnectStart: (id: string) => void
+  onConnectTarget: (id: string) => void
+  onHoverConnectTarget: (id: string | null) => void
   isSelected: boolean
   dragOverGroupId: string | null
   activePistaId: string | null
   activeGroupId: string | null
+  isConnectingMode: boolean
+  isConnectingFrom: boolean
+  isConnectTarget: boolean
 }
 
 const GroupCard = memo(function GroupCard({
@@ -27,10 +33,16 @@ const GroupCard = memo(function GroupCard({
   onMove,
   onSelect,
   onEdit,
+  onConnectStart,
+  onConnectTarget,
+  onHoverConnectTarget,
   isSelected,
   dragOverGroupId,
   activePistaId,
   activeGroupId,
+  isConnectingMode,
+  isConnectingFrom,
+  isConnectTarget,
 }: GroupCardProps) {
   const group = useWorkflowStore((state) => state.groups[groupId])
   const dragState = useRef<{ start: Point; origin: Point } | null>(null)
@@ -50,6 +62,7 @@ const GroupCard = memo(function GroupCard({
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || !group) return
+    if (isConnectingMode) return
 
     const target = event.target as HTMLElement
 
@@ -64,7 +77,12 @@ const GroupCard = memo(function GroupCard({
     }
 
     event.currentTarget.setPointerCapture(event.pointerId)
-  }, [group, groupId, onSelect])
+  }, [group, groupId, isConnectingMode, onSelect])
+
+  const handlePointerDownContainer = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isConnectingMode) return
+    event.stopPropagation()
+  }, [isConnectingMode])
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!dragState.current) return
@@ -96,6 +114,16 @@ const GroupCard = memo(function GroupCard({
     event.stopPropagation()
     onEdit(groupId)
   },[groupId, onEdit])
+
+  const handleConnectClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onConnectStart(groupId)
+  }, [groupId, onConnectStart])
+
+  const handleCardClick = useCallback(() => {
+    if (!isConnectingMode) return
+    onConnectTarget(groupId)
+  }, [groupId, isConnectingMode, onConnectTarget])
 
   const handleAddPista = useCallback(() => {
     setIsPistaOpen(true)
@@ -148,9 +176,15 @@ const GroupCard = memo(function GroupCard({
   return (
     <div
       data-group="true"
+      onClick={handleCardClick}
+      onPointerDown={handlePointerDownContainer}
+      onPointerEnter={() => onHoverConnectTarget(groupId)}
+      onPointerLeave={() => onHoverConnectTarget(null)}
       className={twMerge(
-        "pointer-events-auto absolute w-[360px] select-none rounded-xl border bg-slate-900/90 shadow-lg", 
-        isSelected ? "border-cyan-400/80 ring-2 ring-cyan-400/30" : "border-slate-800"
+        "pointer-events-auto absolute w-[300px] max-w-[90vw] select-none rounded-xl border bg-slate-900 shadow-lg sm:w-[360px]", 
+        isSelected ? "border-cyan-400/80 ring-2 ring-cyan-400/30" : "border-slate-800",
+        isConnectingFrom ? "ring-2 ring-cyan-300/40" : "",
+        isConnectTarget ? "ring-2 ring-emerald-300/40" : ""
       )}
       style={{
         transform: `translate(${group.position.x}px, ${group.position.y}px)`,
@@ -170,6 +204,16 @@ const GroupCard = memo(function GroupCard({
             onPointerDown={(event) => event.stopPropagation()}
           >
             {group.title}
+          </button>
+          <button
+            type="button"
+            className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
+            onClick={handleConnectClick}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label="Iniciar conexão"
+            title="Conectar"
+          >
+            <Icon name="link" size={14} />
           </button>
           <button
             type="button"
@@ -218,9 +262,11 @@ const GroupCard = memo(function GroupCard({
 
         </div>
       </div>
-      {isPistaOpen && (
-        <PistaModal onConfirm={handleCreatePista} onCancel={handleCancelPista} />
-      )}
+      <PistaModal 
+        onConfirm={handleCreatePista} 
+        onCancel={handleCancelPista} 
+        isOpen={isPistaOpen} 
+      />
     </div>
   )
 })

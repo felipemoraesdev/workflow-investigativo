@@ -3,6 +3,7 @@ import Modal from '../../components/Modal'
 import Button from '../../components/Button'
 
 type GroupModalProps = {
+  isOpen: boolean
   title: string
   description: string
   initialValue?: string
@@ -12,6 +13,7 @@ type GroupModalProps = {
 }
 
 const GroupModal = memo(function GroupModal({
+  isOpen,
   title,
   description,
   initialValue = '',
@@ -27,10 +29,22 @@ const GroupModal = memo(function GroupModal({
 
   const handleConfirm = useCallback(() => {
     onConfirm(value)
+    setValue('')
   }, [onConfirm, value])
 
+  const handleCancel = () => {
+    onCancel()
+    setValue('')
+  }
+
   return (
-    <Modal title={title} description={description} onClose={onCancel}>
+    <Modal 
+      isOpen={isOpen} 
+      title={title} 
+      description={description} 
+      onClose={handleCancel} 
+      classNameModal="w-lg max-w-lg"
+    >
       <input
         className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/60"
         placeholder="Nome do grupo"
@@ -39,11 +53,11 @@ const GroupModal = memo(function GroupModal({
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') handleConfirm()
-          if (event.key === 'Escape') onCancel()
+          if (event.key === 'Escape') handleCancel()
         }}
       />
       <div className="mt-4 flex items-center justify-end gap-3">
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={handleCancel}>
           Cancelar
         </Button>
         <Button onClick={handleConfirm}>{confirmLabel}</Button>

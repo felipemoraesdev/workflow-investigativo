@@ -4,6 +4,7 @@ import Button from '../../components/Button'
 import type { MediaType } from '../../types/models'
 
 type PistaModalProps = {
+  isOpen: boolean
   title?: string
   description?: string
   initialType?: MediaType
@@ -21,6 +22,7 @@ type PistaModalProps = {
 }
 
 const PistaModal = memo(function PistaModal({
+  isOpen,
   title = 'Nova pista',
   description = 'Informe o tipo e o conteúdo da pista.',
   initialType = 'text',
@@ -61,13 +63,30 @@ const PistaModal = memo(function PistaModal({
       setFileError('Selecione um arquivo para este tipo de pista.')
       return
     }
-    onConfirm({
+
+    const confirmData = {
       type,
       description: descriptionText.trim(),
       content: type === 'text' ? content : null,
       mediaUrl,
-    })
+    }
+    onConfirm(confirmData)
+
+    handleClearModal()
   }, [content, descriptionText, mediaUrl, onConfirm, type])
+
+  const handleCancel = () => {
+    onCancel()
+    handleClearModal()
+  }
+
+  const handleClearModal = () => {
+    setType('text')
+    setDescriptionText('')
+    setContent('')
+    setMediaUrl(undefined)
+    setFileError('')
+  }
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,9 +107,11 @@ const PistaModal = memo(function PistaModal({
 
   return (
     <Modal
+      isOpen={isOpen}
       title={title}
       description={description}
-      onClose={onCancel}
+      onClose={handleCancel}
+      classNameModal="w-lg max-w-lg"
     >
       <label className="text-xs text-slate-400">Tipo</label>
       <select
@@ -153,7 +174,7 @@ const PistaModal = memo(function PistaModal({
 
 
       <div className="mt-4 flex items-center justify-end gap-3">
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={handleCancel}>
           Cancelar
         </Button>
         <Button onClick={handleConfirm}>{confirmLabel}</Button>

@@ -4,6 +4,7 @@ import { useWorkflowStore } from '../../store/workflowStore'
 import Icon from '../../components/Icon'
 import PistaModal from './PistaModal'
 import { twMerge } from 'tailwind-merge'
+import Modal from '../../components/Modal'
 
 type PistaItemProps = {
   pistaId: string
@@ -30,6 +31,7 @@ const PistaItem = memo(function PistaItem({
     accept: ['pista'],
   })
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isMediaOpen, setIsMediaOpen] = useState(false)
 
   if (!pista) return null
 
@@ -64,6 +66,14 @@ const PistaItem = memo(function PistaItem({
     setIsEditOpen(false)
   }, [])
 
+  const handleOpenMedia = useCallback(() => {
+    setIsMediaOpen(true)
+  }, [])
+
+  const handleCloseMedia = useCallback(() => {
+    setIsMediaOpen(false)
+  }, [])
+
   return (
     <div
       ref={setElement}
@@ -74,10 +84,8 @@ const PistaItem = memo(function PistaItem({
         isActive ? 'opacity-60' : ''
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="rounded-md border border-slate-700 px-2 py-0.5 text-[10px] uppercase text-slate-400">
-          {pista.type}
-        </span>
+      <div className="flex items-start justify-between gap-4">
+        <p className="mt-1 text-xs font-semibold text-slate-100">{pista.description}</p>
         <button
           type="button"
           className="rounded p-1 text-slate-400 transition hover:text-cyan-200"
@@ -89,7 +97,7 @@ const PistaItem = memo(function PistaItem({
           <Icon name="edit" size={12} />
         </button>
       </div>
-      <p className="mt-2 text-xs font-semibold text-slate-100">{pista.description}</p>
+      
       {pista.type === 'text' && (
         <p className="mt-2 text-xs text-slate-200">{pista.content}</p>
       )}
@@ -98,15 +106,9 @@ const PistaItem = memo(function PistaItem({
           <img
             src={pista.mediaUrl}
             alt={pista.description || 'Pista imagem'}
-            className="max-h-40 w-full rounded-md object-cover"
+            className="max-h-32 w-full cursor-pointer rounded-md object-cover sm:max-h-40"
+            onClick={handleOpenMedia}
           />
-          <a
-            href={pista.mediaUrl}
-            download
-            className="text-[10px] uppercase tracking-[0.2em] text-cyan-200"
-          >
-            Baixar imagem
-          </a>
         </div>
       )}
       {pista.type === 'video' && pista.mediaUrl && (
@@ -116,40 +118,40 @@ const PistaItem = memo(function PistaItem({
             className="w-full rounded-md"
             src={pista.mediaUrl}
           />
-          <a
-            href={pista.mediaUrl}
-            download
-            className="text-[10px] uppercase tracking-[0.2em] text-cyan-200"
-          >
-            Baixar vídeo
-          </a>
         </div>
       )}
       {pista.type === 'audio' && pista.mediaUrl && (
         <div className="mt-2 space-y-2">
           <audio controls className="w-full" src={pista.mediaUrl} />
-          <a
-            href={pista.mediaUrl}
-            download
-            className="text-[10px] uppercase tracking-[0.2em] text-cyan-200"
-          >
-            Baixar áudio
-          </a>
         </div>
       )}
-      {isEditOpen && (
-        <PistaModal
-          title="Editar pista"
-          description="Atualize o tipo e o conteúdo da pista."
-          confirmLabel="Salvar"
-          initialType={pista.type}
-          initialDescription={pista.description}
-          initialContent={pista.content ?? ''}
-          initialMediaUrl={pista.mediaUrl}
-          onConfirm={handleConfirmEdit}
-          onCancel={handleCancelEdit}
-        />
+      {pista.type === 'image' && pista.mediaUrl && (
+        <Modal
+          title="Imagem"
+          description={pista.description}
+          onClose={handleCloseMedia}
+          isOpen={isMediaOpen}
+          classNameModal="w-xl max-w-xl flex flex-col items-center"
+        >
+          <img
+            src={pista.mediaUrl}
+            alt={pista.description || 'Imagem ampliada'}
+            className="rounded-lg object-contain"
+          />
+        </Modal>
       )}
+      <PistaModal
+        isOpen={isEditOpen}
+        title="Editar pista"
+        description="Atualize o tipo e o conteúdo da pista."
+        confirmLabel="Salvar"
+        initialType={pista.type}
+        initialDescription={pista.description}
+        initialContent={pista.content ?? ''}
+        initialMediaUrl={pista.mediaUrl}
+        onConfirm={handleConfirmEdit}
+        onCancel={handleCancelEdit}
+      />
     </div>
   )
 })
