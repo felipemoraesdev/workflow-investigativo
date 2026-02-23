@@ -70,7 +70,7 @@ const GroupCard = memo(function GroupCard({
 
     const target = event.target as HTMLElement
 
-    if (target.closest('button')) return
+    if (target.closest('[data-no-drag="true"]')) return
 
     event.stopPropagation()
     onSelect(groupId)
@@ -110,11 +110,6 @@ const GroupCard = memo(function GroupCard({
     
     event.currentTarget.releasePointerCapture(event.pointerId)
   }, [onGroupDragEnd])
-
-  const handleTitleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    onSelect(groupId)
-  }, [groupId, onSelect])
 
   const handleEditClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
@@ -197,22 +192,20 @@ const GroupCard = memo(function GroupCard({
       }}
     >
       <div
-        className="flex items-center justify-between rounded-t-xl border-b border-slate-800 bg-slate-900 px-3 py-2"
+        className="flex items-start justify-between rounded-t-xl border-b border-slate-800 bg-slate-900 px-3 py-2"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        onPointerUp={handlePointerUp} 
       >
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="text-xs font-semibold text-slate-100"
-            onClick={handleTitleClick}
-            onPointerDown={(event) => event.stopPropagation()}
-          >
+        <div className="flex max-w-[82%] items-center gap-1.5">
+          <p className="min-w-0 break-words text-left text-xs font-semibold leading-4 text-slate-100">
             {group.title}
-          </button>
+          </p>
+        </div>
+        <div className='flex items-start'>
           <button
             type="button"
+            data-no-drag="true"
             className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
             onClick={handleEditClick}
             onPointerDown={(event) => event.stopPropagation()}
@@ -221,18 +214,18 @@ const GroupCard = memo(function GroupCard({
           >
             <Icon name="edit" size={14} />
           </button>
-          
+          <button
+            type="button"
+            data-no-drag="true"
+            className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
+            onClick={handleConnectClick}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label="Iniciar conexão"
+            title="Conectar grupo"
+          >
+            <Icon name="link" size={14} />
+          </button>
         </div>
-        <button
-          type="button"
-          className="rounded p-1 text-slate-400 transition hover:text-cyan-200 cursor-pointer"
-          onClick={handleConnectClick}
-          onPointerDown={(event) => event.stopPropagation()}
-          aria-label="Iniciar conexão"
-          title="Conectar grupo"
-        >
-          <Icon name="link" size={14} />
-        </button>
       </div>
       <div className="px-3 py-3" ref={droppableRef}>
         <div className="mb-2 flex items-center justify-between">

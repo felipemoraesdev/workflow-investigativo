@@ -52,8 +52,16 @@ const GroupModal = memo(function GroupModal({
         autoFocus
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter') handleConfirm()
-          if (event.key === 'Escape') handleCancel()
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            event.stopPropagation()
+            handleConfirm()
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault()
+            event.stopPropagation()
+            handleCancel()
+          }
         }}
       />
       <div className="mt-4 flex items-center justify-end gap-3">

@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_app/workflow/$id')({
     if (!workflow) {
       throw redirect({ to: '/' })
     }
-    return { workflowName: workflow?.name ?? params.id }
+    return { workflowName: workflow.name }
   },
   component: RouteComponent,
   head: ({ loaderData }) => ({

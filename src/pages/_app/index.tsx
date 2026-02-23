@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
 import Button from '../../components/Button'
@@ -13,6 +13,7 @@ export const Route = createFileRoute('/_app/')({
 })
 
 function RouteComponent() {
+  const navigate = useNavigate()
   const workflowsSelector = useMemo(() => selectWorkflowsByCreatedAt, [])
   const workflows = useWorkflowStore(useShallow(workflowsSelector))
 
@@ -34,10 +35,15 @@ function RouteComponent() {
     const trimmed = name.trim()
     if (!trimmed) return
     
-    createWorkflow(trimmed)
+    const workflowId = createWorkflow(trimmed)
+    handleCloseCreate()
 
-    setIsCreateOpen(false)
-    setName('')
+    navigate({
+      to: '/workflow/$id',
+      params: {
+        id: workflowId,
+      },
+    })
   }
 
   return (
@@ -56,7 +62,10 @@ function RouteComponent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {workflows.map((workflow) => (
+          {workflows.map((workflow) => {
+            const createdAtFormatted = new Date(workflow.createdAt);
+
+            return (
             <Link
               key={workflow.id}
               to="/workflow/$id"
@@ -64,9 +73,10 @@ function RouteComponent() {
               className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 transition hover:border-cyan-500/60 hover:bg-slate-900"
             >
               <p className="text-sm font-medium text-slate-100">{workflow.name}</p>
-              <p className="mt-2 text-xs text-slate-400">Criado em: {workflow.createdAt}</p>
+              <p className="mt-2 text-xs text-slate-400">Criado em: {createdAtFormatted.toLocaleString('pt-BR')}</p>
             </Link>
-          ))}
+          )
+          })}
         </div>
       )}
 
@@ -84,8 +94,16 @@ function RouteComponent() {
           autoFocus
           onChange={(event) => setName(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') handleConfirmCreate()
-            if (event.key === 'Escape') handleCloseCreate()
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              event.stopPropagation()
+              handleConfirmCreate()
+            }
+            if (event.key === 'Escape') {
+              event.preventDefault()
+              event.stopPropagation()
+              handleCloseCreate()
+            }
           }}
         />
         <div className="mt-4 flex items-center justify-end gap-3">
