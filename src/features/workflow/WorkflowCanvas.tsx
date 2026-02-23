@@ -13,6 +13,7 @@ import Button from '../../components/Button'
 import GroupCard from './GroupCard'
 import GroupModal from './GroupModal'
 import Connections from './Connections'
+import Icon from '../../components/Icon'
 
 const GRID_SIZE = 28
 const GRID_COLOR = 'rgba(148, 163, 184, 0.5)'
@@ -63,6 +64,13 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
 
   const createConnection = useWorkflowStore((state) => state.createConnection)
   const deleteConnection = useWorkflowStore((state) => state.deleteConnection)
+  const undo = useWorkflowStore((state) => state.undo)
+  const redo = useWorkflowStore((state) => state.redo)
+  const resetHistory = useWorkflowStore((state) => state.resetHistory)
+  const beginHistoryBatch = useWorkflowStore((state) => state.beginHistoryBatch)
+  const endHistoryBatch = useWorkflowStore((state) => state.endHistoryBatch)
+  const canUndo = useWorkflowStore((state) => state.historyPast.length > 0)
+  const canRedo = useWorkflowStore((state) => state.historyFuture.length > 0)
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
@@ -299,9 +307,22 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
     return () => container.removeEventListener('wheel', handler)
   }, [handleWheel])
 
+  useEffect(() => {
+    resetHistory()
+    return () => resetHistory()
+  }, [resetHistory, workflowId])
+
   const handleAddGroup = useCallback(() => {
     setIsCreateOpen(true)
   }, [])
+
+  const handleGroupDragStart = useCallback(() => {
+    beginHistoryBatch()
+  }, [beginHistoryBatch])
+
+  const handleGroupDragEnd = useCallback(() => {
+    endHistoryBatch()
+  }, [endHistoryBatch])
 
   const handleExportWorkflow = useCallback(() => {
     const state = useWorkflowStore.getState()
@@ -470,12 +491,16 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
     
     return () => window.removeEventListener('keydown', handler)
   }, [
+    canRedo,
+    canUndo,
     connectingFromId,
     deleteConnection,
     deleteGroup,
     handleCancelConnection,
+    redo,
     selectedConnectionId,
     selectedGroupId,
+    undo,
   ])
 
   useEffect(() => {
@@ -535,8 +560,9 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
   )
 
   const handlePistaDragStart = useCallback(() => {
+    beginHistoryBatch()
     groupedPistasRef.current = buildGroupedPistas()
-  }, [buildGroupedPistas])
+  }, [beginHistoryBatch, buildGroupedPistas])
 
   const handlePistaDragOver = useCallback(
     (event: unknown) => {
@@ -557,8 +583,9 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
         applyGrouped(groupedPistasRef.current)
       }
       groupedPistasRef.current = null
+      endHistoryBatch()
     },
-    [applyGrouped],
+    [applyGrouped, endHistoryBatch],
   )
 
   const DragMonitor = () => {
@@ -656,6 +683,8 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
                   onConnectStart={handleStartConnection}
                   onConnectTarget={handleConnectTarget}
                   onHoverConnectTarget={setHoverGroupId}
+                  onGroupDragStart={handleGroupDragStart}
+                  onGroupDragEnd={handleGroupDragEnd}
                   isSelected={selectedGroupId === groupId}
                   dragOverGroupId={dragOverGroupId}
                   activePistaId={activePistaId}
@@ -671,6 +700,26 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
       </DragDropProvider>
 
       <div className="pointer-events-auto absolute right-6 top-6 z-10 flex items-center gap-3">
+        <Button
+          variant="secondary"
+          onClick={undo}
+          disabled={!canUndo}
+          className="px-2 py-2"
+          aria-label="Desfazer"
+          title="Desfazer"
+        >
+          <Icon name="undo" size={16} />
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={redo}
+          disabled={!canRedo}
+          className="px-2 py-2"
+          aria-label="Refazer"
+          title="Refazer"
+        >
+          <Icon name="redo" size={16} />
+        </Button>
         <Button variant="secondary" onClick={handleExportWorkflow}>
           Exportar JSON
         </Button>

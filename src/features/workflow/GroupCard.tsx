@@ -18,6 +18,8 @@ type GroupCardProps = {
   onConnectStart: (id: string) => void
   onConnectTarget: (id: string) => void
   onHoverConnectTarget: (id: string | null) => void
+  onGroupDragStart: () => void
+  onGroupDragEnd: () => void
   isSelected: boolean
   dragOverGroupId: string | null
   activePistaId: string | null
@@ -36,6 +38,8 @@ const GroupCard = memo(function GroupCard({
   onConnectStart,
   onConnectTarget,
   onHoverConnectTarget,
+  onGroupDragStart,
+  onGroupDragEnd,
   isSelected,
   dragOverGroupId,
   activePistaId,
@@ -76,8 +80,9 @@ const GroupCard = memo(function GroupCard({
       origin: { ...group.position },
     }
 
+    onGroupDragStart()
     event.currentTarget.setPointerCapture(event.pointerId)
-  }, [group, groupId, isConnectingMode, onSelect])
+  }, [group, groupId, isConnectingMode, onGroupDragStart, onSelect])
 
   const handlePointerDownContainer = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!isConnectingMode) return
@@ -101,9 +106,10 @@ const GroupCard = memo(function GroupCard({
     if (!dragState.current) return
 
     dragState.current = null
+    onGroupDragEnd()
     
     event.currentTarget.releasePointerCapture(event.pointerId)
-  }, [])
+  }, [onGroupDragEnd])
 
   const handleTitleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()

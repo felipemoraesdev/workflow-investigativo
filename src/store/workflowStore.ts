@@ -10,6 +10,13 @@ type WorkflowState = {
   connections: Entities<Connection>
 }
 
+type HistoryState = {
+  historyPast: WorkflowState[]
+  historyFuture: WorkflowState[]
+  historyBatchDepth: number
+  historyBatchSnapshotTaken: boolean
+}
+
 type WorkflowActions = {
   createWorkflow: (name: string, createdAt?: string) => string
   updateWorkflow: (id: string, data: Partial<Workflow>) => void
@@ -36,19 +43,56 @@ type ConnectionActions = {
   deleteConnection: (id: string) => void
 }
 
+type HistoryActions = {
+  undo: () => void
+  redo: () => void
+  resetHistory: () => void
+  beginHistoryBatch: () => void
+  endHistoryBatch: () => void
+}
+
 export type WorkflowStore = 
-  WorkflowState & 
-  WorkflowActions & 
-  GroupActions & 
-  PistaActions & 
-  ConnectionActions
+  WorkflowState &
+  HistoryState &
+  WorkflowActions &
+  GroupActions &
+  PistaActions &
+  ConnectionActions &
+  HistoryActions
+
+const HISTORY_LIMIT = 50
+
+const createSnapshot = (state: WorkflowState): WorkflowState => ({
+  workflows: { ...state.workflows },
+  groups: { ...state.groups },
+  pistas: { ...state.pistas },
+  connections: { ...state.connections },
+})
+
+const pushHistory = (set: (next: Partial<WorkflowStore>) => void, get: () => WorkflowStore) => {
+  const state = get()
+  const snapshot = createSnapshot(state)
+  const nextPast = [...state.historyPast, snapshot].slice(-HISTORY_LIMIT)
+
+  if (state.historyBatchDepth > 0) {
+    if (state.historyBatchSnapshotTaken) return
+    set({
+      historyPast: nextPast,
+      historyFuture: [],
+      historyBatchSnapshotTaken: true,
+    })
+    return
+  }
+
+  set({ historyPast: nextPast, historyFuture: [] })
+}
 
 const createWorkflowSlice: StateCreator<
   WorkflowStore,
   [],
   [],
   WorkflowActions
-> = (set) => ({
+> = (set, get) => ({
   createWorkflow: (name, createdAt = new Date().toISOString()) => {
     const id = uuidv4()
     set((state) => ({
@@ -87,9 +131,10 @@ const createGroupSlice: StateCreator<
   [],
   [],
   GroupActions
-> = (set) => ({
+> = (set, get) => ({
   createGroup: (workflowId, title, position) => {
     const id = uuidv4()
+    pushHistory(set, get)
     set((state) => ({
       groups: {
         ...state.groups,
@@ -99,6 +144,7 @@ const createGroupSlice: StateCreator<
     return id
   },
   updateGroup: (id, data) => {
+    pushHistory(set, get)
     set((state) => {
       const group = state.groups[id]
       if (!group) return state
@@ -111,6 +157,7 @@ const createGroupSlice: StateCreator<
     })
   },
   moveGroup: (id, position) => {
+    pushHistory(set, get)
     set((state) => {
       const group = state.groups[id]
       if (!group) return state
@@ -123,6 +170,7 @@ const createGroupSlice: StateCreator<
     })
   },
   deleteGroup: (id) => {
+    pushHistory(set, get)
     set((state) => {
       if (!state.groups[id]) return state
       const { [id]: _deleted, ...rest } = state.groups
@@ -146,9 +194,10 @@ const createPistaSlice: StateCreator<
   [],
   [],
   PistaActions
-> = (set) => ({
+> = (set, get) => ({
   createPista: (groupId, data) => {
     const id = uuidv4()
+    pushHistory(set, get)
     set((state) => ({
       pistas: {
         ...state.pistas,
@@ -158,6 +207,7 @@ const createPistaSlice: StateCreator<
     return id
   },
   updatePista: (id, data) => {
+    pushHistory(set, get)
     set((state) => {
       const pista = state.pistas[id]
       if (!pista) return state
@@ -170,6 +220,7 @@ const createPistaSlice: StateCreator<
     })
   },
   movePista: (id, groupId, order) => {
+    pushHistory(set, get)
     set((state) => {
       const pista = state.pistas[id]
       if (!pista) return state
@@ -182,6 +233,7 @@ const createPistaSlice: StateCreator<
     })
   },
   deletePista: (id) => {
+    pushHistory(set, get)
     set((state) => {
       if (!state.pistas[id]) return state
       const { [id]: _deleted, ...rest } = state.pistas
@@ -189,6 +241,7 @@ const createPistaSlice: StateCreator<
     })
   },
   reorderPistasInGroup: (groupId, orderedIds) => {
+    pushHistory(set, get)
     set((state) => {
       const updated = { ...state.pistas }
       orderedIds.forEach((id, index) => {
@@ -206,9 +259,10 @@ const createConnectionSlice: StateCreator<
   [],
   [],
   ConnectionActions
-> = (set) => ({
+> = (set, get) => ({
   createConnection: (workflowId, fromGroupId, toGroupId) => {
     const id = uuidv4()
+    pushHistory(set, get)
     set((state) => ({
       connections: {
         ...state.connections,
@@ -218,11 +272,72 @@ const createConnectionSlice: StateCreator<
     return id
   },
   deleteConnection: (id) => {
+    pushHistory(set, get)
     set((state) => {
       if (!state.connections[id]) return state
       const { [id]: _deleted, ...rest } = state.connections
       return { connections: rest }
     })
+  },
+})
+
+const createHistorySlice: StateCreator<
+  WorkflowStore,
+  [],
+  [],
+  HistoryActions
+> = (set, get) => ({
+  undo: () => {
+    set((state) => {
+      if (state.historyPast.length === 0) return state
+      const previous = state.historyPast[state.historyPast.length - 1]
+      const past = state.historyPast.slice(0, -1)
+      const future = [createSnapshot(state), ...state.historyFuture]
+      return {
+        ...previous,
+        historyPast: past,
+        historyFuture: future,
+        historyBatchDepth: 0,
+        historyBatchSnapshotTaken: false,
+      }
+    })
+  },
+  redo: () => {
+    set((state) => {
+      if (state.historyFuture.length === 0) return state
+      const next = state.historyFuture[0]
+      const future = state.historyFuture.slice(1)
+      const past = [...state.historyPast, createSnapshot(state)].slice(-HISTORY_LIMIT)
+      return {
+        ...next,
+        historyPast: past,
+        historyFuture: future,
+        historyBatchDepth: 0,
+        historyBatchSnapshotTaken: false,
+      }
+    })
+  },
+  resetHistory: () => {
+    set({
+      historyPast: [],
+      historyFuture: [],
+      historyBatchDepth: 0,
+      historyBatchSnapshotTaken: false,
+    })
+  },
+  beginHistoryBatch: () => {
+    set((state) => ({
+      historyBatchDepth: state.historyBatchDepth + 1,
+      historyBatchSnapshotTaken:
+        state.historyBatchDepth === 0 ? false : state.historyBatchSnapshotTaken,
+    }))
+  },
+  endHistoryBatch: () => {
+    set((state) => ({
+      historyBatchDepth: Math.max(0, state.historyBatchDepth - 1),
+      historyBatchSnapshotTaken:
+        state.historyBatchDepth <= 1 ? false : state.historyBatchSnapshotTaken,
+    }))
   },
 })
 
@@ -233,12 +348,21 @@ const initialState: WorkflowState = {
   connections: {},
 }
 
+const initialHistory: HistoryState = {
+  historyPast: [],
+  historyFuture: [],
+  historyBatchDepth: 0,
+  historyBatchSnapshotTaken: false,
+}
+
 export const useWorkflowStore = create<WorkflowStore>()((...a) => ({
   ...initialState,
+  ...initialHistory,
   ...createWorkflowSlice(...a),
   ...createGroupSlice(...a),
   ...createPistaSlice(...a),
   ...createConnectionSlice(...a),
+  ...createHistorySlice(...a),
 }))
 
 export const selectWorkflowById = (id: string) => (state: WorkflowStore) =>

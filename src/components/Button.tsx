@@ -7,7 +7,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
 }
 
-const Button = memo(function Button({ variant = 'primary', className, ...props }: ButtonProps) {
+const Button = memo(function Button({ variant = 'primary', className, disabled, ...props }: ButtonProps) {
   return (
     <button
       type={props.type ?? 'button'}
@@ -17,6 +17,7 @@ const Button = memo(function Button({ variant = 'primary', className, ...props }
           ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-100 hover:opacity-90'
           : 'border-slate-700 text-slate-200 hover:border-slate-500',
         className,
+        disabled && 'cursor-not-allowed opacity-50',
       )}
       {...props}
     />
