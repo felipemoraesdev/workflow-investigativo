@@ -592,13 +592,7 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
 
         setDragOverGroupId(null)
       },
-      onDragEnd(event) {
-        if (event.canceled) {
-          setDragOverGroupId(null)
-          setActivePistaId(null)
-          setActiveGroupId(null)
-          return
-        }
+      onDragEnd() {
         setDragOverGroupId(null)
         setActivePistaId(null)
         setActiveGroupId(null)

@@ -130,7 +130,13 @@ const createGroupSlice: StateCreator<
       Object.values(state.pistas).forEach((pista) => {
         if (pista.groupId === id) delete pistas[pista.id]
       })
-      return { groups: rest, pistas }
+      const connections = { ...state.connections }
+      Object.values(state.connections).forEach((connection) => {
+        if (connection.fromGroupId === id || connection.toGroupId === id) {
+          delete connections[connection.id]
+        }
+      })
+      return { groups: rest, pistas, connections }
     })
   },
 })

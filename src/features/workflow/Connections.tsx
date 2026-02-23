@@ -52,6 +52,7 @@ const Connections = memo(function Connections({
               onSelectConnection(connection.id)
             }}
             style={{ pointerEvents: 'stroke' }}
+            className="cursor-pointer"
           />
         )
       })}
