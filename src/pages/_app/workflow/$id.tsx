@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import Icon from '../../../components/Icon'
 import WorkflowCanvas from '../../../features/workflow/WorkflowCanvas'
 import { selectWorkflowById, useWorkflowStore } from '../../../store/workflowStore'
@@ -6,6 +6,9 @@ import { selectWorkflowById, useWorkflowStore } from '../../../store/workflowSto
 export const Route = createFileRoute('/_app/workflow/$id')({
   loader: ({ params }) => {
     const workflow = useWorkflowStore.getState().workflows[params.id]
+    if (!workflow) {
+      throw redirect({ to: '/' })
+    }
     return { workflowName: workflow?.name ?? params.id }
   },
   component: RouteComponent,

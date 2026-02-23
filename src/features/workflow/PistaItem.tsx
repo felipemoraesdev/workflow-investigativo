@@ -21,19 +21,17 @@ const PistaItem = memo(function PistaItem({
 }: PistaItemProps) {
   const pista = useWorkflowStore((state) => state.pistas[pistaId])
   const updatePista = useWorkflowStore((state) => state.updatePista)
-  const [element, setElement] = useState<Element | null>(null)
-  const { isDragging } = useSortable({
+
+  const { isDragging, ref } = useSortable({
     id: pistaId,
     index,
-    element,
     type: 'pista',
     group: groupId,
     accept: ['pista'],
   })
+
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isMediaOpen, setIsMediaOpen] = useState(false)
-
-  if (!pista) return null
 
   const handleOpenEdit = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
@@ -74,9 +72,11 @@ const PistaItem = memo(function PistaItem({
     setIsMediaOpen(false)
   }, [])
 
+  if (!pista) return null
+
   return (
     <div
-      ref={setElement}
+      ref={ref}
       data-shadow={isDragging || undefined}
       style={{ opacity: isDragging ? 0.7 : 1 }}
       className={twMerge(

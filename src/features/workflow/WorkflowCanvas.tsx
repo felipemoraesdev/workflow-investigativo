@@ -1,17 +1,18 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useShallow } from 'zustand/shallow'
+import { DragDropProvider, useDragDropMonitor } from '@dnd-kit/react'
+import { move } from '@dnd-kit/helpers'
+import type { Point } from '../../types/models'
 import {
   selectConnectionsByWorkflow,
   selectGroupIdsByWorkflow,
   useWorkflowStore,
 } from '../../store/workflowStore'
-import type { Point } from '../../types/models'
+import Button from '../../components/Button'
 import GroupCard from './GroupCard'
 import GroupModal from './GroupModal'
-import { DragDropProvider, useDragDropMonitor } from '@dnd-kit/react'
-import { move } from '@dnd-kit/helpers'
-import Button from '../../components/Button'
+import Connections from './Connections'
 
 const GRID_SIZE = 28
 const GRID_COLOR = 'rgba(148, 163, 184, 0.5)'
@@ -634,55 +635,20 @@ const WorkflowCanvas = memo(function WorkflowCanvas({ workflowId }: { workflowId
             className="h-full w-full"
             style={{ touchAction: 'none' }}
           />
-          <svg className="pointer-events-auto absolute left-0 top-0 h-full w-full">
-            {connections.map((connection) => {
-              const from = getGroupCenter(connection.fromGroupId)
-              const to = getGroupCenter(connection.toGroupId)
-
-              if (!from || !to) return null
-
-              const start = worldToScreen(from)
-              const end = worldToScreen(to)
-              const path = buildPath(start, end)
-              
-              const isSelected = selectedConnectionId === connection.id
-
-              return (
-                <path
-                  key={connection.id}
-                  d={path}
-                  fill="none"
-                  stroke={isSelected ? 'rgba(34, 197, 94, 0.9)' : 'rgba(56, 189, 248, 0.7)'}
-                  strokeWidth={isSelected ? 7 : 5}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setSelectedConnectionId(connection.id)
-                    setSelectedGroupId(null)
-                  }}
-                  style={{ pointerEvents: 'stroke' }}
-                  className='cursor-pointer'
-                />
-              )
-            })}
-            {connectingFromId && connectingPointer && (() => {
-              const from = getGroupCenter(connectingFromId)
-              if (!from) return null
-
-              const start = worldToScreen(from)
-              const end = worldToScreen(connectingPointer)
-              const path = buildPath(start, end)
-              
-              return (
-                <path
-                  d={path}
-                  fill="none"
-                  stroke="rgba(148, 163, 184, 0.8)"
-                  strokeWidth={2}
-                  strokeDasharray="6 6"
-                />
-              )
-            })()}
-          </svg>
+          <Connections
+            connections={connections}
+            getGroupCenter={getGroupCenter}
+            worldToScreen={worldToScreen}
+            buildPath={buildPath}
+            selectedConnectionId={selectedConnectionId}
+            onSelectConnection={(id) => {
+              setSelectedConnectionId(id)
+              setSelectedGroupId(null)
+            }}
+            onDeselectConnection={() => setSelectedConnectionId(null)}
+            connectingFromId={connectingFromId}
+            connectingPointer={connectingPointer}
+          />
           <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
             <div className="absolute left-0 top-0" style={overlayStyle}>
               {groupIds.map((groupId) => (

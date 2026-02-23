@@ -153,7 +153,7 @@ const GroupCard = memo(function GroupCard({
     setIsPistaOpen(false)
   }, [])
 
-  const { ref: droppableRef, isDropTarget } = useDroppable({
+  const { ref: droppableRef } = useDroppable({
     id: groupId,
     type: 'column',
     accept: ['pista'],

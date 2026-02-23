@@ -1,7 +1,8 @@
-import { HeadContent, Outlet, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Navigate, Outlet, createRootRoute } from '@tanstack/react-router'
 
 export const Route = createRootRoute({
   component: RootComponent,
+  notFoundComponent: () => <Navigate to="/" />,
   head: () => ({
     meta: [{ title: 'CIW' }],
     links: [{ rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
